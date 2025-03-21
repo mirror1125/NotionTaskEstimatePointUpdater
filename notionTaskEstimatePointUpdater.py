@@ -1,9 +1,18 @@
 import time
 import requests
-import boto3
+from dotenv import load_dotenv # type: ignore
+import os
 import logging
 from logging.handlers import RotatingFileHandler
 from concurrent.futures import ThreadPoolExecutor
+
+# .envファイルを読み込む
+load_dotenv()
+
+# 環境変数を取得
+token = os.getenv("TOKEN")
+database_id = os.getenv("DB_ID")
+log_file_path = os.getenv("LOG_FILE_PATH")
 
 # ロガーの作成
 logger = logging.getLogger("myLogger")
@@ -13,25 +22,14 @@ logger.setLevel(logging.INFO)
 logger.handlers.clear()
 
 # RotatingFileHandler の設定（例: 1MBごとにローテートし、バックアップを3つ保持）
-handler = RotatingFileHandler("mylog.log", maxBytes=1*1024*1024, backupCount=3)
+handler = RotatingFileHandler(log_file_path, maxBytes=1*1024*1024, backupCount=3)
 formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 ESTIMATE_POINT = "見積りポイント"
 
-# SSMクライアントの初期化
-ssm = boto3.client('ssm')
-
-def get_parameter(name):
-    response = ssm.get_parameter(Name=name, WithDecryption=True)
-    return response['Parameter']['Value']
-
 def main():
-    # SSMから機密情報を取得
-    token = get_parameter('/notion/task-updater/token')
-    database_id = get_parameter('/notion/task-updater/database-id')
-
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
